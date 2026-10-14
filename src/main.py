@@ -1,16 +1,29 @@
 """Secure RAG Knowledge Assistant.
 
-Portfolio skeleton: a FastAPI service exposing document ingestion and
-guardrailed question-answering over a ChromaDB vector store.
+A FastAPI service exposing document ingestion and guardrailed
+question-answering over a ChromaDB vector store.
 
-Extend the marked TODO sections with your own embedding model, LLM
-provider, and NeMo Guardrails configuration.
+CLI:
+    python -m src.main ingest ./docs   # chunk + embed documents
+    python -m src.main                  # run the API on :8000
+
+API:
+    GET  /health   liveness probe
+    POST /ask      {"question": str, "top_k": int} -> answer + citations
 """
+from __future__ import annotations
 
 import sys
 
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+from src.config import Settings
+from src.embeddings import SentenceTransformerEmbedder
+from src.ingest import ingest_documents as _ingest_documents
+from src.llm import OpenAIProvider
+from src.rag import RAGChain
+from src.vectorstore import open_collection
 
 app = FastAPI(title="Secure RAG Knowledge Assistant")
 
@@ -18,8 +31,8 @@ app = FastAPI(title="Secure RAG Knowledge Assistant")
 class AskRequest(BaseModel):
     """Request body for the /ask endpoint."""
 
-    question: str
-    top_k: int = 4
+    question: str = Field(min_length=1)
+    top_k: int = Field(default=4, ge=1, le=20)
 
 
 class AskResponse(BaseModel):
@@ -34,22 +47,43 @@ def ingest_documents(docs_dir: str) -> int:
 
     Returns the number of chunks indexed.
     """
-    # TODO: implement chunking (e.g. RecursiveCharacterTextSplitter),
-    # embedding, and upsert into a persistent ChromaDB collection.
-    raise NotImplementedError("Ingestion pipeline not yet implemented")
+    return _ingest_documents(docs_dir)
 
 
-def build_rag_chain():
+def build_rag_chain(settings: Settings | None = None) -> RAGChain:
     """Build the retrieval -> guardrails -> generation chain."""
-    # TODO: wire retriever -> NeMo Guardrails -> LLM.
-    raise NotImplementedError("RAG chain not yet implemented")
+    settings = settings or Settings.from_env()
+    embedder = SentenceTransformerEmbedder(settings.embedding_model)
+    collection = open_collection(settings.chroma_persist_dir, settings.collection_name)
+    # Raises RuntimeError with a helpful message when no API key is set.
+    llm = OpenAIProvider(api_key=settings.openai_api_key, model=settings.llm_model)
+    return RAGChain(
+        collection=collection, embedder=embedder, llm=llm, settings=settings
+    )
+
+
+_chain: RAGChain | None = None
+
+
+def get_chain() -> RAGChain:
+    """Lazily-built chain singleton used by the API.
+
+    Tests monkeypatch this to inject a stub LLM and temp vector store.
+    """
+    global _chain
+    if _chain is None:
+        try:
+            _chain = build_rag_chain()
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return _chain
 
 
 @app.post("/ask", response_model=AskResponse)
 def ask(req: AskRequest) -> AskResponse:
     """Answer *req.question* with citations from indexed documents."""
-    # TODO: retrieve top_k chunks, apply guardrails, generate answer.
-    raise NotImplementedError("Ask endpoint not yet implemented")
+    result = get_chain().ask(req.question, top_k=req.top_k)
+    return AskResponse(answer=result.answer, citations=result.citations)
 
 
 @app.get("/health")

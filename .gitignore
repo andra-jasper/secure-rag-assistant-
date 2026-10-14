@@ -1,0 +1,11 @@
+# Secrets — never commit
+.env
+
+# Local vector store
+chroma_db/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

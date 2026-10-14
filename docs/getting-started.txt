@@ -1,0 +1,25 @@
+Northwind Cloud — Getting Started Guide
+=========================================
+
+Welcome! This guide walks you through launching your first project.
+
+Step 1: Create an account
+-------------------------
+Sign up with your work email. You will receive a verification link that
+expires after 24 hours.
+
+Step 2: Install the CLI
+-----------------------
+Download the Northwind CLI for your platform and run `northwind login`.
+The CLI stores a short-lived token in your home directory.
+
+Step 3: Deploy your first service
+---------------------------------
+Run `northwind deploy --name hello-world`. The deploy command packages
+your code, uploads it, and returns a public URL in under two minutes.
+
+Step 4: Invite your team
+------------------------
+Open Project Settings, then Members, and invite teammates by email.
+Each member gets the Viewer role by default; promote to Editor when
+they need to change configuration.

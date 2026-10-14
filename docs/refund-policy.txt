@@ -1,0 +1,26 @@
+Northwind Cloud — Refund Policy
+===============================
+
+Last updated: March 2026
+
+Eligibility
+-----------
+You may request a full refund within 30 days of purchase if the service
+was not activated. After activation, refunds are prorated based on the
+unused portion of the billing period.
+
+How to request a refund
+-----------------------
+1. Sign in to the Northwind Cloud console.
+2. Open Billing, then select Invoices.
+3. Click "Request refund" next to the invoice and describe the reason.
+
+Our billing team reviews refund requests within 5 business days. Approved
+refunds are returned to the original payment method within 10 business
+days of approval.
+
+Exceptions
+----------
+Custom enterprise contracts follow the terms in the signed agreement and
+are not covered by this policy. Usage-based overages are non-refundable
+once the resources have been consumed.
